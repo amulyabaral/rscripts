@@ -1,0 +1,43 @@
+# Libraries
+library(networkD3)
+library(dplyr)
+library(htmlwidgets)
+
+#needs an excel table/csv with source, target and values in 3 columns respectively
+#a list of flows with intensity for each flow
+links <- read.csv("C:\\Users\\amulb\\Downloads\\bins_combined_sankey_classification\\combined_bins_sankey_zone4.tsv.csv")
+
+# From these flows we need to create a node data frame: it lists every entities involved in the flow
+nodes <- data.frame(
+  name=c(as.character(links$source), 
+         as.character(links$target)) %>% unique()
+)
+
+# With networkD3, connection must be provided using id, not using real name like in the links dataframe.. So we need to reformat it.
+links$IDsource <- match(links$source, nodes$name)-1 
+links$IDtarget <- match(links$target, nodes$name)-1
+
+# Make the Network
+p <- sankeyNetwork(Links = links, Nodes = nodes,
+                   Source = "IDsource", Target = "IDtarget",
+                   Value = "value", NodeID = "name", 
+                   sinksRight=FALSE, nodePadding = 25,
+                   fontSize = 15, fontFamily = "sans-serif") #options are 
+p
+
+
+
+#set desired font size, different way
+#p$x$options$fontSize<-15
+
+# save the widget, javascript for values for each label in brackets
+javascript_string <- 
+  'function(el, x){
+    d3.select(el).selectAll(".node text")
+      .text(d => d.name + " (" + d.value + ")")
+      .style("font-size", "12px")
+      .style("font-family", "sans-serif")
+      .style("font-weight", "700");
+  }'
+
+htmlwidgets::onRender(x = p, jsCode = javascript_string)
